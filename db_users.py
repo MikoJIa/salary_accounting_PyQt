@@ -7,9 +7,9 @@ from pathlib import Path
 class DataBase:
 
     def __init__(self):
-        self.db_path = Path.home() / '.db'
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.initialize_db()
+        self.db_path = Path(__file__).parent / 'salary.db'
+        #self.initialize_db()
+        #self.init_salary_table()
 
     def initialize_db(self):
         conn = sqlite3.connect(self.db_path)
@@ -27,6 +27,26 @@ class DataBase:
         ip_address text NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id))
         """)
+
+    def init_salary_table(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS salary_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fio TEXT NOT NULL,
+        total_hours REAL NOT NULL,
+        price_one_hour REAL NOT NULL,
+        job_title TEXT NOT NULL,
+        accrual REAL NOT NULL,
+        vacation_pay REAL DEFAULT 0,
+        remains REAL,
+        record_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+        )
+        """)
+        conn.commit()
+        conn.close()
+
 
     def hashing_password(self, password):
         salt_bytes = os.urandom(16)

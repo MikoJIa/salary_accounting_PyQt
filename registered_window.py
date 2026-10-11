@@ -18,7 +18,7 @@ class RegisteredWindow(QDialog):
         self.setStyleSheet(REGISTRATION_WINDOW_STYLE)
 
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(50, 35, 50, 35   )
+        main_layout.setContentsMargins(50, 35, 50, 35)
         main_layout.setSpacing(20)
 
         title_label = QLabel('Регистрация')
