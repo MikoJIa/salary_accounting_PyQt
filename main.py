@@ -3,8 +3,9 @@ import sys
 
 from PySide6.QtCore import QDate
 from PySide6.QtGui import QImage, QPixmap, Qt
-from PySide6.QtWidgets import QApplication,QMessageBox, QWidget, QLabel, QPushButton, QLineEdit, QDateEdit, QTableWidget, QHeaderView , QTableWidgetItem
-from style_sheet.styles import title_main, BACKGROUND_DARK_ACCENT, BUTTON_STYLE, DATE_EDIT_COMPACT_STYLE, INPUT_STYLE, TABLE_STYLE
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QLabel, QPushButton, QLineEdit, QDateEdit, QTableWidget, QHeaderView , QTableWidgetItem
+from style_sheet.styles import (title_main, BACKGROUND_DARK_ACCENT, BUTTON_STYLE,
+                                DATE_EDIT_COMPACT_STYLE, INPUT_STYLE, TABLE_STYLE, QMessage_style)
 from login_window import LoginWindow
 from db_users import DataBase
 
@@ -96,6 +97,12 @@ class MainWindow(QWidget):
         self.remains.setStyleSheet(INPUT_STYLE)
         self.remains.setFixedSize(240, 50)
 
+        self.employee_id = QLineEdit(self)
+        self.employee_id.move(280, 220)
+        self.employee_id.setPlaceholderText('Номер работника')
+        self.employee_id.setStyleSheet(INPUT_STYLE)
+        self.employee_id.setFixedSize(240, 50)
+
         self.date_edit = QDateEdit(self)
         self.date_edit.setStyleSheet(DATE_EDIT_COMPACT_STYLE)
         self.date_edit.move(30, 270)
@@ -110,7 +117,7 @@ class MainWindow(QWidget):
         job_title = self.job_title.text().strip()
         accrual = self.accrual.text().strip().replace(',', '.')
         vacation_pay = self.vacation_pay.text().strip().replace(',', '.')
-        remains = self.remains.text().strip().replace(',', '.')
+        employee_id = self.employee_id.text().strip()
         date_edit = self.date_edit.text().strip()
         if not fio:
             return None, "Поле ФИО пустое!"
@@ -123,8 +130,12 @@ class MainWindow(QWidget):
         try:
             total_hours = float(total_hours)
             price_one_hour = float(price_one_hour)
+            accrual = float(accrual) if accrual else 0.0
+            vacation_pay = float(vacation_pay) if vacation_pay else 0.0
         except ValueError:
             return None, "Числовые поля должны содержать только числа!"
+
+        remains = total_hours * price_one_hour - accrual - vacation_pay
 
         data = {
             "fio": fio,
@@ -134,6 +145,7 @@ class MainWindow(QWidget):
             "accrual": accrual,
             "vacation_pay": vacation_pay,
             "remains": remains,
+            "employee_id": employee_id,
             "record_date": date_edit
         }
         return data, None
@@ -158,20 +170,41 @@ class MainWindow(QWidget):
     def table_section(self):
         self.table = QTableWidget(self)
         self.table.setStyleSheet(TABLE_STYLE)
-        self.table.setGeometry(30, 370, 900, 400)
-        self.table.setColumnCount(9)
-        headers = ['id', 'ФИО', 'Кол-во часов', 'Стоимость часа', 'Должность', 'Начисления', 'Отпускные', 'Остаток', 'Дата']
+        self.table.setGeometry(30, 370, 1000, 400)
+        self.table.setColumnCount(10)
+        headers = ['ФИО', 'Кол-во часов', 'Стоимость часа', 'Должность', 'Начисления', 'Отпускные', 'Остаток', 'Дата', 'Номер раб-к', 'id']
         self.table.setHorizontalHeaderLabels(headers)
         self.table.resizeColumnsToContents()
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.itemSelectionChanged.connect(self.on_row_selected)
 
+    def get_emp_id(self):
+        row = self.table.currentRow()
+        if row < 0:
+            return None
+
+        return int(self.table.item(row, 8).text())
+
     def get_id(self):
         row = self.table.currentRow()
         if row < 0:
             return None
-        return int(self.table.item(row, 0).text())
+        item = self.table.item(row, 9)
+        if item is None:
+            return None
+        return int(item.text()) if item else None
+
+    def all_row_clear(self):
+        self.fio.clear()
+        self.total_hours.clear()
+        self.price_one_hour.clear()
+        self.job_title.clear()
+        self.accrual.clear()
+        self.vacation_pay.clear()
+        self.employee_id.clear()
+        self.remains.clear()
+        self.date_edit.setDate(QDate.currentDate())
 
 
     def on_row_selected(self):
@@ -184,6 +217,7 @@ class MainWindow(QWidget):
             self.accrual.setText(self.table.item(row, 4).text())
             self.vacation_pay.setText(self.table.item(row, 5).text())
             self.remains.setText(self.table.item(row, 6).text())
+            self.employee_id.setText(self.table.item(row, 8).text())
 
     def on_add_record_clicked(self):
         data, error = self.input_validity_check()
@@ -194,16 +228,17 @@ class MainWindow(QWidget):
             conn = sqlite3.connect('salary.db')
             cursor = conn.cursor()
             cursor.execute("""
-            INSERT INTO salary_data (fio, total_hours, price_one_hour, job_title, accrual, vacation_pay, remains, record_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO salary_data (employee_id, fio, total_hours, price_one_hour, job_title, accrual, vacation_pay, remains, record_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,(
-                data['fio'], data['total_hours'], data['price_one_hour'],
+                data['employee_id'], data['fio'], data['total_hours'], data['price_one_hour'],
                 data['job_title'], data['accrual'], data['vacation_pay'],
                 data['remains'], data['record_date']
             ))
             conn.commit()
             conn.close()
             self.load_table()
+            self.all_row_clear()
             QMessageBox.information(self, "Успех", "Запись успешно добавлена!")
 
         except Exception as e:
@@ -217,78 +252,101 @@ class MainWindow(QWidget):
         accrual = self.accrual.text()
         vacation_pay = self.vacation_pay.text()
         remains = self.remains.text()
-        date_edit = self.date_edit.date().toString("yyyy-MM-dd")
-        id = self.get_id()
+        date_edit = self.date_edit.date().toString("dd.MM.yyyy")
+        emp_id = self.get_emp_id()
+        if emp_id is None:
+            QMessageBox.warning(self, "Ошибка", "Необходимо выбрать запись!")
+            return
+        if float(remains) != 0:
+            remains = float(remains)
+            accrual = float(accrual) if accrual else 0.0
+            vacation_pay = float(vacation_pay) if vacation_pay else 0.0
+            remains = remains - accrual - vacation_pay
+        print(remains)
+
         try:
             conn = sqlite3.connect('salary.db')
             cursor = conn.cursor()
             cursor.execute("""
-            UPDATE salary_date 
-            SET fio = ?, total_hours = ?, 
-            price_one_hour = ?, job_title = ?, 
-            accrual = ?, vacation_pay = ?, remains = ?, 
-            record_date = ?
-            WHERE id = ? 
+            INSERT INTO salary_data 
+            (employee_id, fio, total_hours, 
+            price_one_hour, job_title, 
+            accrual, vacation_pay, remains, 
+            record_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) 
             """,
-                (fio, total_hours, price_one_hour, job_title, accrual, vacation_pay, remains, date_edit, id)
+                (emp_id, fio, total_hours, price_one_hour,
+                 job_title, accrual,
+                 vacation_pay, remains,
+                 date_edit)
             )
             conn.commit()
             conn.close()
-            return "Запись переписана!"
+            self.load_table()
+            self.all_row_clear()
+            QMessageBox.information(self, "Успешно!", "Запись изменена!")
         except Exception as e:
-            return str(e), "Ошибка обновления записи!"
+            QMessageBox.warning(self, str(e), "Ошибка обновления записи!")
 
-    def on_delete_record_clicked(self, id):
+    def on_delete_record_clicked(self):
+        rec_id = self.get_id()
+        if rec_id is None:
+            QMessageBox.warning(self, "Внимание", "Необходимо выбрать запись для удаления!")
+            return
+        answer = QMessageBox.question(self, "Необходимо ваше подтверждение!",
+                                      f"Вы желаете удалить выбранную запись?",
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if answer != QMessageBox.StandardButton.Yes:
+            return
         try:
-            conn = sqlite3.connect('salary.dbla')
+            conn = sqlite3.connect('salary.db')
             cursor = conn.cursor()
             cursor.execute("""
-            DELETE FROM salary_date 
+            DELETE FROM salary_data
             WHERE id = ? 
-            """, (id))
+            """, (rec_id,))
+            if cursor.rowcount == 0:
+                QMessageBox.warning(self, "Ошибка!", "Таких данных нет!")
+                return
             conn.commit()
             conn.close()
-            QMessageBox.information("Запись успешно удалена!")
+            self.load_table()
+            QMessageBox.information(self, "Успех!", "Запись успешно удалена!")
         except Exception as e:
-            return str(e), "Ошибка удаления!"
+            QMessageBox.critical(self, str(e), "Ошибка удаления!")
+            return
 
     def get_all_records(self):
         try:
             conn = sqlite3.connect('salary.db')
             cursor = conn.execute("""
-            SELECT fio, total_hours, price_one_hour, job_title, accrual, vacation_pay, remains, record_date, id
+            SELECT fio, total_hours, price_one_hour, job_title, accrual, vacation_pay, remains, record_date, employee_id, id
             FROM salary_data
             ORDER BY record_date DESC
             """)
             rows = cursor.fetchall()
             conn.close()
             return rows
+
         except Exception as e:
             print(e)
             return []
 
     def load_table(self):
-        col = 0
-        new_list_item = {}
         records = self.get_all_records()
         self.table.setRowCount(len(records))
         for row, rec in enumerate(records):
-            new_list_item[row] = list(rec)
-
-        for row in range(0, len(new_list_item)):
-            sum_hours_price = new_list_item[row][1] * new_list_item[row][2]
-            new_list_item[row][6] = sum_hours_price
-            col = 0
-            for value in new_list_item[row]:
+            for col, value in enumerate(rec):
                 item = QTableWidgetItem(str(value))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(row, col, item)
-                col += 1
-        self.table.setColumnHidden(8, True)
+
+        self.table.setColumnHidden(9, True)
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setStyleSheet(QMessage_style)
     db = DataBase()
     db.init_salary_table()
     #login_window = LoginWindow()

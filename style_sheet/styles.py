@@ -345,4 +345,27 @@ REGISTRATION_WINDOW_STYLE = """
                 max-height: 1px;
                 margin: 10px 0;
             }
+            """
+
+QMessage_style = """ 
+                QMessageBox {
+                background-color: #2b2b2b;
+            }
+            QLabel#qt_msgbox_label {
+                color: #E0E0E0;
+                font-size: 14px;
+            }
+            QLabel#qt_msgbox_informativelabel {
+                color: #A0A0A0;
+                font-size: 12px;
+            }
+            QPushButton {
+                color: #E0E0E0;
+                background-color: #3c3c3c;
+                padding: 4px 12px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #4c4c4c;
+            }
         """

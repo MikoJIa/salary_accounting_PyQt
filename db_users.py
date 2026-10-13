@@ -34,6 +34,7 @@ class DataBase:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS salary_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL,
         fio TEXT NOT NULL,
         total_hours REAL NOT NULL,
         price_one_hour REAL NOT NULL,
