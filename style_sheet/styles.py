@@ -369,3 +369,36 @@ QMessage_style = """
                 background-color: #4c4c4c;
             }
         """
+
+QCHECK_BOX_DATE = """
+    QCheckBox {
+        color: #B0BEC5;
+        font-size: 14px;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        spacing: 8px;
+        background: transparent;
+    }
+    QCheckBox::indicator {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #3d3d3d;
+        border-radius: 4px;
+        background-color: #2d2d2d;
+    }
+    QCheckBox::indicator:hover {
+        border-color: #555555;
+    }
+    QCheckBox::indicator:checked {
+        background-color: #4CAF50;
+        border-color: #4CAF50;
+    }
+"""
+
+RESET_LABEL = """
+    QLabel {
+            color: #B0BEC5;
+            font-size: 13px;
+            background: transparent;
+            padding: 0 10px;
+        }
+"""
