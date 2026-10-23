@@ -11,6 +11,7 @@ class LoginWindow(QDialog):
         super().__init__()
         self.db_account = DataBase()
         self.setup_ui()
+        self.logged_user = None
 
     def setup_ui(self):
         self.setWindowTitle("Вход в программу")
@@ -83,17 +84,14 @@ class LoginWindow(QDialog):
 
         self.setLayout(main_layout)
 
-
     def open_registration(self):
         reg_account = RegisteredWindow(self.db_account, self)
         if reg_account.exec() == QDialog.DialogCode.Accepted: # делаем проверку о успешной регистрации
-            new_login = reg_account.get_new_login()
+            new_login = reg_account.get_login()
             if new_login:
                 self.login_input.setText(new_login)
                 self.password_input.clear()
                 self.error_label.hide()
-
-
 
     def try_login(self):
         LOGIN = self.login_input.text().strip()
@@ -107,6 +105,7 @@ class LoginWindow(QDialog):
         self.progress_bar.setRange(0, 10)
         self.log_button.setEnabled(False)
         self.reg_button.setEnabled(False)
+        self.end_login(LOGIN, PASSWORD)
 
     def show_e(self, text):
         self.error_label.setText(text)
@@ -121,14 +120,19 @@ class LoginWindow(QDialog):
         if not self.db_account.check_user(login):
             self.show_e(f"Пользователь {login} не найден!!!")
             return
-        if self.db_account.verification(login, password):
-            self.status_label.setText('Вход успешен!')
-            self.status_label.setStyleSheet('color: #78909C; font-size: 11px;')
-            self.accept()
-        else:
-            self.show_e("Пароль неверен!")
+        if not self.db_account.verification(login, password):
+            self.show_e("Пароль не верен!")
             self.password_input.clear()
             self.password_input.setFocus()
+            return
+
+        self.logged_user = login
+        self.status_label.setText('Вход успешен!')
+        self.status_label.setStyleSheet('color: #78909C; font-size: 11px;')
+        self.accept()
 
     def get_credentials(self):
         return self.login_input.text(), self.password_input.text()
+
+    def get_logged_user(self):
+        return self.logged_user

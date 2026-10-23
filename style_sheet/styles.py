@@ -402,3 +402,66 @@ RESET_LABEL = """
             padding: 0 10px;
         }
 """
+
+ADMIN_WINDOW = """
+QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #6c5ce7;
+                padding: 10px;
+                background-color: #f5f5f5;
+                border-radius: 10px;
+            }
+"""
+
+ADMIN_BUTTON = """
+QPushButton {
+                background-color: #6c5ce7;
+                color: white;
+                padding: 8px 20px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #5b4bc4; }
+"""
+
+ADMIN_APPROVE_BTN = """
+QPushButton {
+                background-color: #2d6a4f;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #40916c; }
+"""
+REGECT_BTN = """
+QPushButton {
+                background-color: #c1121f;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #e01e2e; }
+"""
+REFRESH_BTN = """
+QPushButton {
+                background-color: #4a4a4a;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #5a5a5a; }
+"""
+DELETE_BTN = """
+QPushButton {
+                background-color: #c1121f;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #e01e2e; }
+"""

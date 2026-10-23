@@ -3,7 +3,7 @@ import sys
 
 from PySide6.QtCore import QDate
 from PySide6.QtGui import QImage, QPixmap, Qt
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QCheckBox,
+from PySide6.QtWidgets import (QApplication,QDialog, QHBoxLayout, QCheckBox,
                                QVBoxLayout, QGridLayout, QMessageBox,
                                QMainWindow, QWidget, QLabel,
                                QPushButton, QLineEdit, QDateEdit,
@@ -13,6 +13,7 @@ from style_sheet.styles import (title_main, BACKGROUND_DARK_ACCENT, BUTTON_STYLE
                                 QMessage_style, QCHECK_BOX_DATE, RESET_LABEL)
 from login_window import LoginWindow
 from db_users import DataBase
+from admin_window import AdminWindow
 
 
 class MainWindow(QMainWindow):
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initializeUI()
+        self.db = DataBase()
 
     def initializeUI(self):
         self.setGeometry(400, 200, 1150, 750)
@@ -509,10 +511,17 @@ if __name__ == '__main__':
     app.setStyleSheet(QMessage_style)
     db = DataBase()
     db.init_salary_table()
-    #login_window = LoginWindow()
-    #if login_window.exec_():
+    login = LoginWindow()
+    if login.exec() != QDialog.DialogCode.Accepted:
+        sys.exit(0)
+
+    login_name = login.get_logged_user()
+    db = login.db_account
+
+    if db.is_admin(login_name):
+        admin_window = AdminWindow(db)
+        admin_window.exec()
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-    #else:
-    sys.exit()
