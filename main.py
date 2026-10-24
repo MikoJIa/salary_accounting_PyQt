@@ -31,7 +31,6 @@ class MainWindow(QMainWindow):
         self.setUpMainWindow()
         self.show()
 
-
     def setUpMainWindow(self):
         central = QWidget()
         self.setCentralWidget(central)
@@ -46,6 +45,7 @@ class MainWindow(QMainWindow):
         form_container = QWidget()
         self.create_input_field(form_container)
         top_row.addWidget(form_container, stretch=1)
+        self.add_labels_to_fields()
         buttons_container = QWidget()
         self.button_section(buttons_container)
         top_row.addWidget(buttons_container, stretch=0)
@@ -93,6 +93,8 @@ class MainWindow(QMainWindow):
         grid.setHorizontalSpacing(20)
         grid.setVerticalSpacing(10)
 
+
+        label_fio = QLabel('ФИО')
         self.fio = QLineEdit(self)
         self.fio.setPlaceholderText('ФИО')
         self.fio.setStyleSheet(INPUT_STYLE)
@@ -155,6 +157,40 @@ class MainWindow(QMainWindow):
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         return grid
+
+    def add_labels_to_fields(self):
+        fields = [
+            (self.fio, "ФИО", 0, 0),
+            (self.total_hours, "Кол-во часов", 1, 0),
+            (self.price_one_hour, "Стоимость часа", 2, 0),
+            (self.job_title, "Должность", 3, 0),
+            (self.date_edit, "Дата", 4, 0),
+            (self.accrual, "Начисления", 0, 1),
+            (self.vacation_pay, "Отпускные", 1, 1),
+            (self.employee_id, "Номер работника", 2, 1),
+            (self.remains, "Остаток", 3, 1),
+        ]
+
+        # получаем текущий QGridLayout с контейнера
+        grid = self.fio.parentWidget().layout()
+
+        # Убираем все поля из grid (без удаления)
+        for widget, _, _, _ in fields:
+            grid.removeWidget(widget)
+
+        # Оборачиваем каждое в QVBoxLayout + QLabel
+        for widget, label_text, row, col in fields:
+            box = QVBoxLayout()
+            box.setSpacing(4)
+            box.setContentsMargins(0, 0, 0, 0)
+
+            label = QLabel(label_text)
+            label.setStyleSheet("font-size: 12px; color: #78909C;")
+            box.addWidget(label)
+
+            box.addWidget(widget)
+
+            grid.addLayout(box, row, col)
 
     def input_validity_check(self):
         fio = self.fio.text().strip()

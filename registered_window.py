@@ -1,7 +1,7 @@
 import sqlite3
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QDialog, QLineEdit, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QDialog, QLineEdit, QHBoxLayout, QPushButton, QMessageBox
 from style_sheet.styles import REGISTRATION_WINDOW_STYLE
 from datetime import datetime
 from db_users import DataBase
@@ -98,34 +98,6 @@ class RegisteredWindow(QDialog):
 
         self.setLayout(main_layout)
 
-    def create_registration_request(self, login, password):
-        try:
-            if self.check_user(login):
-                return False, "Пользователь м таким логином уже существует!!!"
-            conn = sqlite3.connect("requests.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-            SELECT id FROM registration_requests WHERE login = ? AND status = 'pending'
-            """, (login,))
-            if cursor.fetchone():
-                conn.close()
-                return False, "Такая заявка уже есть!!!"
-            pass_hash = self.hashing_password(password)
-            cursor.execute("""
-            INSERT INTO registration_requests (login, password) VALUE (?, ?)
-            """, (login, pass_hash))
-            conn.commit()
-            conn.close()
-            return True, "Заявка перинята"
-        except Exception as e:
-            return False, str(e)
-
-    def view_success(self, message):
-        self.success_label.setText(message)
-        self.success_label.show()
-        #self.success_label.hide()
-        QTimer.singleShot(2000, self.cancellation)
-
     def view_error(self, message):
         self.error_label.setText(message)
         self.error_label.show()
@@ -152,51 +124,11 @@ class RegisteredWindow(QDialog):
 
         success, message = self.db_account.create_registration_request(login, password)
         if success:
-            self.view_success(message)
-            self.new_login = login
+            QMessageBox().information(self, "Успех!", message)
+            #self.new_login = login
             QTimer.singleShot(1000, self.accept)
         else:
-            self.view_error(message)
-
-    def approve_registration(self, request_id):
-        conn = sqlite3.connect("request.db")
-        cursor = conn.cursor()
-        try:
-            cursor.execute("""
-            SELECT login, password FROM registration_requests WHERE id = ? AND status = 'pending'
-            """, (request_id,))
-            request = cursor.fetchone()
-            if not request:
-                return False, "Заявка не найдена!!!"
-            login, password = request
-            cursor.execute("""
-            INSERT INTO users (login, password) VALUE (?, ?)
-            """, (login, password))
-            cursor.execute(
-                "UPDATE registration_requests SET status = 'approved' WHERE id = ?",
-                (request_id,))
-            conn.commit()
-            return True, f"Пользователь '{login}' одобрен!"
-        except Exception as e:
-            conn.rollback()
-            return False, str(e)
-        finally:
-            conn.close()
-
-    def reject_registration(self, request_id):
-        """Отклоняет заявку"""
-        try:
-            conn = sqlite3.connect("requests.db")
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE registration_requests SET status = 'rejected' WHERE id = ?",
-                (request_id,)
-            )
-            conn.commit()
-            conn.close()
-            return True, "Заявка отклонена!"
-        except Exception as e:
-            return False, str(e)
+            QMessageBox.information(self, "Ошибка!", message)
 
     def get_login(self):
         return self.new_login

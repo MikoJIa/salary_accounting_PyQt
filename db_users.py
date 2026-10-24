@@ -48,6 +48,33 @@ class DataBase:
         conn.commit()
         conn.close()
 
+    def create_registration_request(self, login, password):
+        login = login.strip()
+        password = password.strip()
+        if not login or not password:
+            return False, "Логин и пароль должны быть заполнены!"
+        if self.check_user(login):
+            return False, "Пользователь с таким логином уже существует!!!"
+
+        try:
+            conn = sqlite3.connect("requests.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+            SELECT id FROM registration_requests WHERE login = ? AND status = 'pending'
+            """, (login,))
+            if cursor.fetchone():
+                conn.close()
+                return False, "Такая заявка уже есть!!!"
+            pass_hash = self.hashing_password(password)
+            cursor.execute("""
+            INSERT INTO registration_requests (login, password) VALUES (?, ?)
+            """, (login, pass_hash))
+            conn.commit()
+            conn.close()
+            return True, "Заявка перинята"
+        except Exception as e:
+            return False, str(e)
+
     def create_default_admin(self):
         # создание администратора admin/1
         if not self.check_user('admin'):
@@ -72,8 +99,6 @@ class DataBase:
             finally:
                 conn.close()
 
-
-
     def init_salary_table(self):
         conn = sqlite3.connect('salary.db')
         cursor = conn.cursor()
@@ -82,8 +107,8 @@ class DataBase:
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         employee_id INTEGER NOT NULL,
         fio TEXT NOT NULL,
-        total_hours REAL NOT NULL,
-        price_one_hour REAL NOT NULL,
+        total_hours REAL,
+        price_one_hour REAL,
         job_title TEXT NOT NULL,
         accrual REAL NOT NULL,
         vacation_pay REAL DEFAULT 0,
@@ -96,6 +121,52 @@ class DataBase:
 
     def hashing_password(self, password):
         return hashlib.sha256(password.encode()).hexdigest()
+
+    def approve_registration(self, request_id):
+        conn = sqlite3.connect("requests.db")
+        conn_users = sqlite3.connect("user.db")
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+            SELECT login, password FROM registration_requests WHERE id = ? AND status = 'pending'
+            """, (request_id,))
+            request = cursor.fetchone()
+            if not request:
+                return False, "Заявка не найдена!!!"
+            login, password = request
+
+            cursor_users = conn_users.cursor()
+            cursor_users.execute("""
+            INSERT INTO users (login, password) VALUES (?, ?)
+            """, (login, password))
+            cursor.execute(
+                "UPDATE registration_requests SET status = 'approved' WHERE id = ?",
+                (request_id,))
+            conn.commit()
+            conn_users.commit()
+            return True, f"Пользователь '{login}' одобрен!"
+        except Exception as e:
+            conn.rollback()
+            conn_users.rollback()
+            return False, str(e)
+        finally:
+            conn.close()
+            conn_users.close()
+
+    def reject_registration(self, request_id):
+        """Отклоняет заявку"""
+        try:
+            conn = sqlite3.connect("requests.db")
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE registration_requests SET status = 'rejected' WHERE id = ?",
+                (request_id,)
+            )
+            conn.commit()
+            conn.close()
+            return True, "Заявка отклонена!"
+        except Exception as e:
+            return False, str(e)
 
     def check_user(self, login):
         try:
