@@ -185,8 +185,6 @@ class DataBase:
             conn = sqlite3.connect('user.db')
             cursor = conn.cursor()
             pass_encoding = self.hashing_password(password)
-            print("verification:", repr(login), "| hash:", repr(pass_encoding))
-            print("hash:", pass_encoding)
             cursor.execute(
                 """SELECT id FROM users WHERE login = ? AND password = ?""",
                 (login, pass_encoding)
